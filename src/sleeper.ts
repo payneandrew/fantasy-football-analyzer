@@ -6,7 +6,10 @@ const CACHE_DIR = path.resolve(process.cwd(), ".cache");
 const PLAYERS_FILE = path.join(CACHE_DIR, "players.json");
 const PLAYERS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export const USERNAME = process.env.SLEEPER_USERNAME ?? "paynis";
+export const USERNAME = process.env.SLEEPER_USERNAME ?? "";
+if (!USERNAME) {
+  throw new Error("SLEEPER_USERNAME is not set. Set it to your Sleeper username (see README).");
+}
 
 export interface Player {
   player_id: string;

@@ -1,9 +1,21 @@
 {
   "name": "fantasy-football-analyzer",
   "version": "0.1.0",
+  "description": "MCP server that gives Claude access to your Sleeper fantasy football leagues: rosters, matchups, waivers, projections, and guillotine/FAAB analysis.",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "main": "build/index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "fantasy-football",
+    "sleeper",
+    "claude"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
