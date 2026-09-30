@@ -28,7 +28,7 @@ Built with TypeScript. Uses Sleeper's public read-only API, so no API key or log
 
 ## Setup
 
-Requires Node.js 18+.
+Requires Node.js 20.12+.
 
 ```bash
 git clone https://github.com/payneandrew/fantasy-football-analyzer.git
@@ -69,10 +69,21 @@ After changing anything in `src/`, rebuild and restart the MCP server (`/mcp` in
 
 ## How it works
 
-- `src/sleeper.ts`: API client, plus a daily on-disk cache of Sleeper's large player database (`.cache/`).
-- `src/projections.ts`: fetches projections and past stats, **rescores them with your league's own scoring settings** (Sleeper's generic point totals often include bonuses your league doesn't use), and computes optimal lineups.
-- `src/guillotine.ts` / `src/faab.ts`: guillotine-league standings and FAAB market analysis built from matchup and transaction history.
-- `src/index.ts`: the MCP server and tool definitions.
+```
+src/
+  index.ts              MCP server entry point; registers each platform's tools
+  env.ts                loads .env
+  sleeper/
+    client.ts           API client + daily on-disk cache of Sleeper's player database (.cache/)
+    tools.ts            the MCP tool definitions
+    projections.ts      fetches projections and past stats, rescores them with YOUR league's
+                        scoring settings (Sleeper's generic totals often include bonuses your
+                        league doesn't use), and computes optimal lineups
+    guillotine.ts       guillotine-league standings and chop history
+    faab.ts             FAAB market analysis from transaction history
+  yahoo/
+    auth.ts, auth-cli.ts, client.ts   OAuth login and API client (tools not yet implemented)
+```
 
 ## Limitations
 

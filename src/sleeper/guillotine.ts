@@ -1,4 +1,4 @@
-import { sleeper, type Roster, type LeagueUser } from "./sleeper.js";
+import { sleeper, type Roster, type LeagueUser } from "./client.js";
 
 interface MatchupRow {
   roster_id: number;

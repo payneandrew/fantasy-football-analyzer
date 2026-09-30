@@ -7,7 +7,7 @@
   "type": "module",
   "main": "build/index.js",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.12"
   },
   "keywords": [
     "mcp",
@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "yahoo:auth": "node build/yahoo/auth-cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",

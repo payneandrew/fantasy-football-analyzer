@@ -1,4 +1,4 @@
-import { sleeper, getPlayers, playerName, type Roster, type LeagueUser } from "./sleeper.js";
+import { sleeper, getPlayers, playerName, type Roster, type LeagueUser } from "./client.js";
 import { round } from "./guillotine.js";
 
 interface Bid {
