@@ -22,13 +22,15 @@ An MCP server (TypeScript) that gives Claude live access to the owner's fantasy 
 
 Prefer the MCP tools over guessing. Typical flows:
 - **"Who should I start / what's my lineup?"** `get_lineup_analysis`
-- **"Who should I pick up / bid on?"** `get_waiver_targets` (ranks by `lineup_gain`), and after a chop `get_chopped_players` + `get_faab_report`
+- **"Who should I pick up / bid on?"** For chop pools use `get_bid_plan` first (it runs the forecast, previews the pool, and sizes bids); `get_chop_forecast` answers "who's getting chopped?" on its own. For ordinary free agents use `get_waiver_targets` (ranks by `lineup_gain`). `get_chopped_players` and `get_faab_report` give the raw detail.
+- **"Who is breaking out?" / evaluating a pickup or a player's role:** `get_usage_risers` (free agents) and `get_usage_trends` (specific players). Snap share and targets+carries lead points, so weigh them above last week's score. A big recent role with a tiny projection is usually an injury fill-in (the tools flag it in `caution`). Waiver and lineup tools also include a compact `usage` field.
 - **"Where do I stand?"** `get_guillotine_status`, `get_weekly_scoreboard`
 - Always call `get_my_leagues` first to get the league id. League ids and usernames are deliberately not stored in this repo.
 
 Analysis conventions that came out of earlier sessions:
 - `lineup_gain` is measured against the **current** lineup, one candidate at a time. Gains are **not additive**: if two targets would fill the same slot, the second is worth less once the first is added.
-- FAAB is sealed-bid and the bidder pays only if they win. A bid at one's true value costs nothing when it loses. Avoid round numbers (rivals cluster at $200); they overpay the runner-up by about $36 on average. Use `get_faab_report` for rivals' budgets and bidding history before sizing bids. Pace the budget: roughly one chop per week remains.
+- `get_bid_plan` verdicts: "bid" has a realistic win chance, "long shot" is only worth placing because losing is free, "skip" isn't worth a claim. Its win probabilities rest on only a few past chops and are rough, so say so. `dollars_per_point` is the user's valuation knob; show `implied_dollars_per_point` so they can judge the price of a star.
+- FAAB is sealed-bid and the bidder pays their own bid only if they win. A bid at one's true value costs nothing when it loses. Avoid round numbers (rivals cluster at $200); they overpay the runner-up by about $36 on average. Use `get_faab_report` for rivals' budgets and bidding history before sizing bids. Pace the budget: roughly one chop per week remains.
 - Every claim needs a drop. Name specific drops.
 - Be honest about uncertainty. Projections are single-week only, come from an undocumented Sleeper endpoint, and have no variance model. Say what was and wasn't checked, and don't invent details the data doesn't show.
 - Today's date comes from the session. Check `get_nfl_state` for the current week rather than assuming.
@@ -37,7 +39,7 @@ Analysis conventions that came out of earlier sessions:
 
 - `src/index.ts`: server entry; registers each platform's tools.
 - `src/env.ts`: loads `.env` (project-root relative; never overrides existing variables).
-- `src/sleeper/`: `client.ts` (API client, daily on-disk player cache in `.cache/`), `tools.ts` (all Sleeper tool definitions), `projections.ts` (rescores projections with league scoring, optimal lineups), `guillotine.ts`, `faab.ts`.
+- `src/sleeper/`: `client.ts` (API client, daily on-disk player cache in `.cache/`), `tools.ts` (all Sleeper tool definitions), `projections.ts` (rescores projections with league scoring, optimal lineups), `usage.ts` (snap/target/carry usage and trends), `guillotine.ts`, `faab.ts`.
 - `src/yahoo/`: `auth.ts` / `auth-cli.ts` (OAuth login via `npm run yahoo:auth`, tokens in `.cache/`), `client.ts`.
 - `scripts/start-mcp.sh`: launches the server, installing and building first if needed (this is what `.mcp.json` runs, so a fresh clone or cloud session works).
 - Build with `npm run build` (TypeScript, Node 20.12+). After changing `src/`, rebuild and restart the MCP server.

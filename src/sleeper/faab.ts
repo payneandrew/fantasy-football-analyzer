@@ -68,6 +68,7 @@ export async function loadFaab(leagueId: string) {
       const runnerUp = losers[0]?.amount;
       return {
         week: winner.week,
+        player_id: winner.playerId,
         player: playerName(players[winner.playerId], winner.playerId),
         winner: label(winner.rosterId),
         winner_id: winner.rosterId,

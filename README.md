@@ -20,6 +20,10 @@ Built with TypeScript. Uses Sleeper's public read-only API, so no API key or log
 | `search_players` | Find a player by name |
 | `get_lineup_analysis` | Your roster's projections under **your league's scoring**, plus the optimal lineup |
 | `get_waiver_targets` | Free agents ranked by how much they'd improve your lineup |
+| `get_chop_forecast` | Guillotine: probability each team is chopped this week, simulating what unplayed starters can still score |
+| `get_bid_plan` | Guillotine: who will be on waivers, how much each would raise your lineup, what similar players cost in past chops, and the bid that maximizes expected surplus |
+| `get_usage_trends` | Weekly snap share, targets, carries and red-zone looks for players you name (or your roster), with a rising/falling signal |
+| `get_usage_risers` | Free agents whose role is growing, with a warning for likely injury fill-ins |
 | `get_projections` | League-scored projections for any players or position |
 | `get_guillotine_status` | Guillotine leagues: chop history, survivors, distance to the chop line |
 | `get_weekly_scoreboard` | Guillotine leagues: all surviving teams ranked for a week |
@@ -77,10 +81,13 @@ src/
   sleeper/
     client.ts           API client + daily on-disk cache of Sleeper's player database (.cache/)
     tools.ts            the MCP tool definitions
+    usage.ts            snap share, targets/carries and team shares from weekly stats; rising/falling signal
     projections.ts      fetches projections and past stats, rescores them with YOUR league's
                         scoring settings (Sleeper's generic totals often include bonuses your
                         league doesn't use), and computes optimal lineups
     guillotine.ts       guillotine-league standings and chop history
+    forecast.ts         chop-probability simulation
+    bids.ts             FAAB price models and bid sizing
     faab.ts             FAAB market analysis from transaction history
   yahoo/
     auth.ts, auth-cli.ts, client.ts   OAuth login and API client (tools not yet implemented)

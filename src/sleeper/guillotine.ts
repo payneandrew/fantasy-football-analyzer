@@ -9,6 +9,7 @@ export interface GuillotineState {
   isGuillotine: boolean;
   currentWeek: number;
   lastScoredWeek: number;
+  scoring: Record<string, number>;
   rosters: Roster[];
   label: (rosterId: number) => string;
   /** week -> roster_id chopped at the end of that week */
@@ -65,6 +66,7 @@ export async function loadGuillotine(leagueId: string): Promise<GuillotineState>
     isGuillotine: league.settings?.type === 3,
     currentWeek,
     lastScoredWeek,
+    scoring: league.scoring_settings ?? {},
     rosters,
     label,
     chops,

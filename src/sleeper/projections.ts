@@ -9,6 +9,8 @@ export type Scoring = Record<string, number>;
 export interface Projection {
   player_id: string;
   opponent: string | null;
+  /** game date, YYYY-MM-DD (null when the player has no game that week) */
+  date: string | null;
   stats: Record<string, number>;
 }
 
@@ -36,21 +38,26 @@ export async function getProjections(season: string, week: number): Promise<Map<
   if (hit && Date.now() - hit.at < PROJECTION_TTL_MS) return hit.rows;
   const rows = new Map<string, Projection>();
   for (const r of await fetchRows("projections", season, week)) {
-    rows.set(r.player_id, { player_id: r.player_id, opponent: r.opponent ?? null, stats: r.stats ?? {} });
+    rows.set(r.player_id, { player_id: r.player_id, opponent: r.opponent ?? null, date: r.date ?? null, stats: r.stats ?? {} });
   }
   projCache.set(week, { at: Date.now(), rows });
   return rows;
 }
 
-// Past weeks never change, so keep them for the life of the process.
-const statCache = new Map<number, Map<string, Record<string, number>>>();
+// Completed weeks rarely change (only stat corrections), but a week in progress does, so entries expire.
+const STAT_TTL_MS = 30 * 60 * 1000;
+export interface StatRow {
+  team: string | null;
+  stats: Record<string, number>;
+}
+const statCache = new Map<number, { at: number; rows: Map<string, StatRow> }>();
 
-export async function getWeekStats(season: string, week: number) {
+export async function getWeekStatRows(season: string, week: number): Promise<Map<string, StatRow>> {
   const hit = statCache.get(week);
-  if (hit) return hit;
-  const rows = new Map<string, Record<string, number>>();
-  for (const r of await fetchRows("stats", season, week)) rows.set(r.player_id, r.stats ?? {});
-  statCache.set(week, rows);
+  if (hit && Date.now() - hit.at < STAT_TTL_MS) return hit.rows;
+  const rows = new Map<string, StatRow>();
+  for (const r of await fetchRows("stats", season, week)) rows.set(r.player_id, { team: r.team ?? null, stats: r.stats ?? {} });
+  statCache.set(week, { at: Date.now(), rows });
   return rows;
 }
 
@@ -58,10 +65,10 @@ export async function getWeekStats(season: string, week: number) {
 export async function recentPoints(season: string, currentWeek: number, scoring: Scoring, n = 3) {
   const weeks: number[] = [];
   for (let w = Math.max(1, currentWeek - n); w < currentWeek; w++) weeks.push(w);
-  const perWeek = await Promise.all(weeks.map((w) => getWeekStats(season, w)));
+  const perWeek = await Promise.all(weeks.map((w) => getWeekStatRows(season, w)));
   return (id: string) => {
     const pts = perWeek.map((m) => {
-      const s = m.get(id);
+      const s = m.get(id)?.stats;
       return s && (s.gp ?? 0) > 0 ? scoreStats(s, scoring) : null;
     });
     const played = pts.filter((p): p is number => p !== null);
