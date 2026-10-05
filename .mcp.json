@@ -2,8 +2,7 @@
   "mcpServers": {
     "sleeper": {
       "command": "bash",
-      "args": ["scripts/start-mcp.sh"],
-      "env": { "SLEEPER_USERNAME": "paynis" }
+      "args": ["scripts/start-mcp.sh"]
     }
   }
 }

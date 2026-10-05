@@ -37,21 +37,9 @@ npm install
 npm run build
 ```
 
-Set your Sleeper username in [.mcp.json](.mcp.json):
+Copy `.env.example` to `.env` and set `SLEEPER_USERNAME` to your Sleeper username. `.env` is gitignored.
 
-```json
-{
-  "mcpServers": {
-    "sleeper": {
-      "command": "node",
-      "args": ["build/index.js"],
-      "env": { "SLEEPER_USERNAME": "your_sleeper_username" }
-    }
-  }
-}
-```
-
-Open the folder in [Claude Code](https://claude.com/claude-code) and approve the `sleeper` server (check status with `/mcp`). To use it with another MCP client, run `node build/index.js` over stdio with `SLEEPER_USERNAME` set.
+Open the folder in [Claude Code](https://claude.com/claude-code) and approve the `sleeper` server (check status with `/mcp`). To use it with another MCP client, run `node build/index.js` over stdio with `SLEEPER_USERNAME` set in the environment.
 
 Then try:
 
@@ -66,6 +54,7 @@ A [Claude Code cloud session](https://code.claude.com/docs/en/claude-code-on-the
 1. At [claude.ai/code](https://claude.ai/code), connect GitHub and give access to this repository.
 2. Create an environment with:
    - **Network access:** Custom, with allowed domains `api.sleeper.app` and `api.sleeper.com`, and **Also include default list of common package managers** checked (needed for `npm`). The default Trusted list does not include Sleeper.
+   - **Environment variables:** `SLEEPER_USERNAME=your_sleeper_username` (the environment is private to your account; do not put credentials here)
    - **Setup script** (optional, speeds up startup): `npm ci && npm run build`
 3. Start a session on this repo (from the browser or the Code tab in the Claude mobile app) and ask, for example, *"List my Sleeper leagues."*
 

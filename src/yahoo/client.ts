@@ -2,7 +2,7 @@ import { getAccessToken } from "./auth.js";
 
 const BASE = "https://fantasysports.yahooapis.com/fantasy/v2";
 
-/** GET a Yahoo Fantasy resource as JSON. `path` is relative to /fantasy/v2, e.g. "league/461.l.690469/settings". */
+/** GET a Yahoo Fantasy resource as JSON. `path` is relative to /fantasy/v2, e.g. "league/<game_key>.l.<league_id>/settings". */
 export async function yahooGet(path: string): Promise<any> {
   const url = `${BASE}/${path}${path.includes("?") ? "&" : "?"}format=json`;
   const call = async (token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } });
