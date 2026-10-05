@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "sleeper": {
-      "command": "node",
-      "args": ["build/index.js"],
+      "command": "bash",
+      "args": ["scripts/start-mcp.sh"],
       "env": { "SLEEPER_USERNAME": "paynis" }
     }
   }

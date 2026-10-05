@@ -59,6 +59,18 @@ Then try:
 - *"Who should I start this week?"*
 - *"Who should I pick up, and what should I bid?"*
 
+## Run in the cloud (no computer needed)
+
+A [Claude Code cloud session](https://code.claude.com/docs/en/claude-code-on-the-web) runs on Anthropic's servers, so you can use this from your phone without leaving a laptop on. The repo's `.mcp.json` is picked up automatically, and `scripts/start-mcp.sh` installs dependencies and builds on first start.
+
+1. At [claude.ai/code](https://claude.ai/code), connect GitHub and give access to this repository.
+2. Create an environment with:
+   - **Network access:** Custom, with allowed domains `api.sleeper.app` and `api.sleeper.com`, and **Also include default list of common package managers** checked (needed for `npm`). The default Trusted list does not include Sleeper.
+   - **Setup script** (optional, speeds up startup): `npm ci && npm run build`
+3. Start a session on this repo (from the browser or the Code tab in the Claude mobile app) and ask, for example, *"List my Sleeper leagues."*
+
+Yahoo features need a local `.env` and token, so they are not available in cloud sessions.
+
 ## Development
 
 ```bash
