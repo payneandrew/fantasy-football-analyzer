@@ -22,6 +22,13 @@ Built with TypeScript. Uses Sleeper's public read-only API, so no API key or log
 | `get_waiver_targets` | Free agents ranked by how much they'd improve your lineup |
 | `get_chop_forecast` | Guillotine: probability each team is chopped this week, simulating what unplayed starters can still score |
 | `get_bid_plan` | Guillotine: who will be on waivers, how much each would raise your lineup, what similar players cost in past chops, and the bid that maximizes expected surplus |
+| `get_yahoo_league` | Yahoo: scoring rules, roster slots, playoff/trade settings, standings, FAAB balances |
+| `get_yahoo_roster` | Yahoo: your roster with lineup slots, injury status, byes |
+| `get_yahoo_matchup` | Yahoo: this week's head-to-head with both teams' points/projections and your opponent's roster |
+| `get_yahoo_free_agents` | Yahoo: top unowned players |
+| `get_yahoo_transactions` | Yahoo: recent adds, drops, trades |
+| `get_yahoo_lineup_analysis` | Yahoo: your roster scored with your league's rules (RotoWire projections), best lineup vs current |
+| `get_yahoo_waiver_targets` | Yahoo: free agents ranked by how much they'd raise your lineup, with usage trends |
 | `get_usage_trends` | Weekly snap share, targets, carries and red-zone looks for players you name (or your roster), with a rising/falling signal |
 | `get_usage_risers` | Free agents whose role is growing, with a warning for likely injury fill-ins |
 | `get_projections` | League-scored projections for any players or position |
@@ -62,7 +69,7 @@ A [Claude Code cloud session](https://code.claude.com/docs/en/claude-code-on-the
    - **Setup script** (optional, speeds up startup): `npm ci && npm run build`
 3. Start a session on this repo (from the browser or the Code tab in the Claude mobile app) and ask, for example, *"List my Sleeper leagues."*
 
-Yahoo features need a local `.env` and token, so they are not available in cloud sessions.
+Yahoo tools need a local `.env` and token, so they are not available in cloud sessions.
 
 ## Development
 
@@ -90,14 +97,18 @@ src/
     bids.ts             FAAB price models and bid sizing
     faab.ts             FAAB market analysis from transaction history
   yahoo/
-    auth.ts, auth-cli.ts, client.ts   OAuth login and API client (tools not yet implemented)
+    auth.ts, auth-cli.ts, client.ts   OAuth login and API client
+    normalize.ts, league.ts           turns Yahoo's JSON into plain data; league/roster/matchup/free-agent readers
+    scoring.ts, match.ts, analysis.ts league scoring -> projection keys, Yahoo-to-Sleeper player matching, lineup and waiver analysis
+    tools.ts                          the Yahoo MCP tools (registered only when YAHOO_CLIENT_ID is set)
+    *.test.ts                         fixture tests: npm test
 ```
 
 ## Limitations
 
 - Projections come from an **undocumented** Sleeper endpoint (RotoWire data). It is single-week only and could change without notice.
 - No rest-of-season outlook or variance modeling yet.
-- Sleeper only. Yahoo support is not implemented.
+- Yahoo's Fantasy Sports API requires approval (an application, a signed agreement, and a new app with the Fantasy Sports permission whose Client ID you submit to Yahoo). Yahoo exposes no projections, so the Yahoo analysis tools score Sleeper's RotoWire projections with your Yahoo league's own rules.
 - Defense projections are approximate because expected values don't fit bracket scoring exactly.
 
 ## Disclaimer

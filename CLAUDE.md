@@ -12,10 +12,11 @@ An MCP server (TypeScript) that gives Claude live access to the owner's fantasy 
 - **FAAB budget $1000.** Trades are disabled. Waivers and free agents are the only way to add players.
 - Timing (observed over weeks 1-3): the chop is processed about 12:30 AM ET Tuesday, after Monday night. Claims clear about 3 AM ET Wednesday, so bids are placed during Tuesday. A team can be mathematically chopped on Monday night before Sleeper processes it. Compare the lowest score against what unplayed starters can still add.
 
-### Yahoo: "Cargo Shorts": API access pending
+### Yahoo: "Cargo Shorts": API access live
 - Traditional **12-team head-to-head** league, 0.5 PPR, **6-pt passing TD** (QBs are worth more than usual), 25 pass yds/pt, 10 yds/pt rush/rec, K and DEF included.
 - Lineup: QB, 2 WR, 2 RB, TE, W/R/T, K, DEF, 7 bench, 1 IR. 6 of 12 teams make the playoffs (weeks 15-17). Trade deadline Nov 28. FAAB with a very small remaining budget, so trades are the main lever.
-- Yahoo requires an approved application for its Fantasy API (since July 2026). The owner applied and was told to expect 1-2 weeks. Until approved, **the owner pastes roster/settings data into the chat.** The OAuth code in `src/yahoo/` works, but every API call returns 403 until approval. Yahoo tools are not built yet.
+- Yahoo API access is enabled (Oct 2026; it required a NEW app with the Fantasy Sports permission, a signed agreement, and the new app's Client ID on Yahoo's form). The seven `get_yahoo_*` tools have been run against the live league and the parsers handle real responses; the team's own league id comes from `YAHOO_LEAGUE_ID` in `.env`. They only exist locally (credentials and the saved login live in `.env` and `.cache/`), not in cloud sessions.
+- Yahoo's API exposes no projections, so `get_yahoo_lineup_analysis` and `get_yahoo_waiver_targets` score Sleeper's RotoWire projections with the Yahoo league's own rules and match players by name and team (Sleeper's Yahoo ids are mostly missing). Players that can't be matched are listed in `unmatched`.
 - Yahoo and Sleeper both use RotoWire projections. Rescoring Sleeper's stat lines with Yahoo's scoring rules matched Yahoo's displayed projections to within about 1 point.
 
 ## How to help
@@ -24,6 +25,7 @@ Prefer the MCP tools over guessing. Typical flows:
 - **"Who should I start / what's my lineup?"** `get_lineup_analysis`
 - **"Who should I pick up / bid on?"** For chop pools use `get_bid_plan` first (it runs the forecast, previews the pool, and sizes bids); `get_chop_forecast` answers "who's getting chopped?" on its own. For ordinary free agents use `get_waiver_targets` (ranks by `lineup_gain`). `get_chopped_players` and `get_faab_report` give the raw detail.
 - **"Who is breaking out?" / evaluating a pickup or a player's role:** `get_usage_risers` (free agents) and `get_usage_trends` (specific players). Snap share and targets+carries lead points, so weigh them above last week's score. A big recent role with a tiny projection is usually an injury fill-in (the tools flag it in `caution`). Waiver and lineup tools also include a compact `usage` field.
+- **Yahoo league (head-to-head):** `get_yahoo_lineup_analysis`, `get_yahoo_waiver_targets`, `get_yahoo_matchup`, `get_yahoo_league`. In a session where those tools are missing (for example a cloud session), ask the owner to paste roster/settings data instead. Players on bye show `on_bye: true`, so a 0 projection there is expected, not a data problem.
 - **"Where do I stand?"** `get_guillotine_status`, `get_weekly_scoreboard`
 - Always call `get_my_leagues` first to get the league id. League ids and usernames are deliberately not stored in this repo.
 
@@ -40,7 +42,7 @@ Analysis conventions that came out of earlier sessions:
 - `src/index.ts`: server entry; registers each platform's tools.
 - `src/env.ts`: loads `.env` (project-root relative; never overrides existing variables).
 - `src/sleeper/`: `client.ts` (API client, daily on-disk player cache in `.cache/`), `tools.ts` (all Sleeper tool definitions), `projections.ts` (rescores projections with league scoring, optimal lineups), `usage.ts` (snap/target/carry usage and trends), `guillotine.ts`, `faab.ts`.
-- `src/yahoo/`: `auth.ts` / `auth-cli.ts` (OAuth login via `npm run yahoo:auth`, tokens in `.cache/`), `client.ts`.
+- `src/yahoo/`: `auth.ts` / `auth-cli.ts` (OAuth login via `npm run yahoo:auth`, tokens in `.cache/`), `client.ts`, `normalize.ts` + `league.ts` (Yahoo JSON readers), `scoring.ts`, `match.ts`, `analysis.ts`, `tools.ts`; tests in `*.test.ts` (`npm test`).
 - `scripts/start-mcp.sh`: launches the server, installing and building first if needed (this is what `.mcp.json` runs, so a fresh clone or cloud session works).
 - Build with `npm run build` (TypeScript, Node 20.12+). After changing `src/`, rebuild and restart the MCP server.
 - Configuration: `SLEEPER_USERNAME` (required), plus `YAHOO_*` values, come from `.env` locally and from the environment's variables in a cloud session. See `.env.example`.
