@@ -149,3 +149,8 @@ export function parseTransactions(response: unknown) {
     }),
   }));
 }
+
+/** Trades you have proposed or been offered that are still waiting on a response. */
+export async function getPendingTrades(teamKey: string) {
+  return parseTransactions(await yahooGet(`team/${teamKey}/transactions;types=pending_trade`));
+}

@@ -33,6 +33,10 @@ Built with TypeScript. Uses Sleeper's public read-only API, so no API key or log
 | `get_roster_outlook` | Your roster week by week: lineup projection, who's on bye, empty slots, what byes cost |
 | `get_yahoo_ros_rankings` | Yahoo: rest-of-season values under your Yahoo scoring |
 | `get_yahoo_roster_outlook` | Yahoo: week-by-week lineup outlook and bye costs |
+| `get_yahoo_league_rosters` | Yahoo: every team's roster, record, FAAB and a rest-of-season strength score |
+| `evaluate_yahoo_trade` | Yahoo: grade a trade for both sides by best-lineup points over the rest of the season |
+| `find_yahoo_trades` | Yahoo: search for 1-for-1, 2-for-1 and 1-for-2 trades that help both teams |
+| `get_yahoo_pending_trades` | Yahoo: trades you proposed or were offered that are still waiting on a response |
 | `get_usage_trends` | Weekly snap share, targets, carries and red-zone looks for players you name (or your roster), with a rising/falling signal |
 | `get_usage_risers` | Free agents whose role is growing, with a warning for likely injury fill-ins |
 | `get_projections` | League-scored projections for any players or position |
@@ -104,6 +108,7 @@ src/
   yahoo/
     auth.ts, auth-cli.ts, client.ts   OAuth login and API client
     normalize.ts, league.ts           turns Yahoo's JSON into plain data; league/roster/matchup/free-agent readers
+    trades.ts                         trade evaluation and search (lineup-aware, both sides)
     scoring.ts, match.ts, analysis.ts league scoring -> projection keys, Yahoo-to-Sleeper player matching, lineup and waiver analysis
     tools.ts                          the Yahoo MCP tools (registered only when YAHOO_CLIENT_ID is set)
     *.test.ts                         fixture tests: npm test
