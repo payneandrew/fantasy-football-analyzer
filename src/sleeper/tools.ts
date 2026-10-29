@@ -15,6 +15,7 @@ import { getProjections, recentPoints, scoreStats, optimalLineup, startablePosit
 import { loadUsage, compactUsage, type UsageWeek } from "./usage.js";
 import { forecastChop } from "./forecast.js";
 import { buildPriceModels, buildQualityModel, planBids } from "./bids.js";
+import { loadRos, replacementLevels, rankRos, rosterOutlook, ROS_CAVEAT, OUT_STATUSES } from "./ros.js";
 
 const text = (data: unknown) => ({
   content: [{ type: "text" as const, text: typeof data === "string" ? data : JSON.stringify(data, null, 2) }],
@@ -775,6 +776,77 @@ export function registerSleeperTools(server: McpServer) {
           gain: "Gain is this week's projected lineup improvement; it is discounted for overlap with other targets you might also win. Single-week projections only.",
         },
         pools: results,
+      });
+    },
+  );
+
+  const RANK_POSITIONS = ["QB", "RB", "WR", "TE", "K", "DEF"] as const;
+
+  server.registerTool(
+    "get_ros_rankings",
+    {
+      description: `Rest-of-season player values under THIS league's scoring: summed weekly projections through the chosen week (byes drop out automatically) and points above replacement ('par'), which is how much more a player gives you than the best free player at his position. Use it to compare players for trades and pickups beyond this week. ${ROS_CAVEAT}`,
+      inputSchema: {
+        league_id: z.string(),
+        position: z.enum(RANK_POSITIONS).optional(),
+        limit: z.number().int().min(1).max(50).default(20),
+        available_only: z.boolean().default(false).describe("Only players nobody has rostered"),
+        include_injured: z.boolean().default(false).describe("Include players on IR, Out, PUP or suspended (excluded by default)"),
+        through_week: z.number().int().min(1).max(18).default(17),
+      },
+    },
+    async ({ league_id, position, limit, available_only, include_injured, through_week }) => {
+      const [league, state, players, rosters, uid] = await Promise.all([
+        sleeper.get<any>(`/league/${league_id}`),
+        sleeper.state(),
+        getPlayers(),
+        sleeper.get<Roster[]>(`/league/${league_id}/rosters`),
+        sleeper.userId(),
+      ]);
+      const { ros, weeks } = await loadRos(state.season, state.week, through_week, league.scoring_settings);
+      const positionOf = (id: string) => (players[id] && (players[id].position === "DEF" || (players[id].status === "Active" && players[id].team)) ? players[id].position : undefined);
+      const levels = replacementLevels(ros, positionOf, league.roster_positions, league.total_rosters);
+      const mine = new Set(rosters.find((r) => r.owner_id === uid)?.players ?? []);
+      const taken = new Set(rosters.flatMap((r) => r.players ?? []));
+      const startable = startablePositions(league.roster_positions);
+      const rows = rankRos(ros, weeks, levels, (id) => {
+        const d = describePlayer(players, id);
+        return startable.has(players[id]?.position ?? "") ? { name: d.name, pos: d.pos, team: d.team, injury: d.injury } : null;
+      })
+        .filter((r) => (!position || r.pos === position) && (!available_only || !taken.has(r.id)) && (include_injured || !OUT_STATUSES.has(r.injury ?? "")))
+        .slice(0, limit)
+        .map((r) => ({ ...r, owner: mine.has(r.id) ? "you" : taken.has(r.id) ? "rostered" : "free", id: undefined }));
+      return text({
+        weeks: `${weeks[0]}-${weeks[weeks.length - 1]}`,
+        replacement_level_per_game: Object.fromEntries(Object.entries(levels).filter(([p]) => startable.has(p)).map(([p, v]) => [p, round(v)])),
+        players: rows,
+        caveat: ROS_CAVEAT,
+      });
+    },
+  );
+
+  server.registerTool(
+    "get_roster_outlook",
+    {
+      description: `Your roster week by week for the rest of the season: best-lineup projection each week, who is on bye, empty starting slots, and bye_cost (points the byes cost you versus a no-bye lineup). Shows which weeks are thin so you can shore them up in advance. ${ROS_CAVEAT}`,
+      inputSchema: { league_id: z.string(), through_week: z.number().int().min(1).max(18).default(17) },
+    },
+    async ({ league_id, through_week }) => {
+      const [league, state, players, { mine }] = await Promise.all([sleeper.get<any>(`/league/${league_id}`), sleeper.state(), getPlayers(), myRoster(league_id)]);
+      const { ros, weeks } = await loadRos(state.season, state.week, through_week, league.scoring_settings);
+      const roster = (mine.players ?? []).flatMap((id) => {
+        const d = describePlayer(players, id);
+        return d.pos && ["QB", "RB", "WR", "TE", "K", "DEF"].includes(d.pos) ? [{ id, name: d.name, pos: d.pos, injury: d.injury }] : [];
+      });
+      const outlook = rosterOutlook(roster, ros, weeks, league.roster_positions);
+      const worst = [...outlook].sort((a, b) => b.bye_cost - a.bye_cost).slice(0, 3).filter((w) => w.bye_cost > 0);
+      return text({
+        weeks: `${weeks[0]}-${weeks[weeks.length - 1]}`,
+        average_lineup_projection: round(outlook.reduce((t, w) => t + w.lineup_projection, 0) / Math.max(1, outlook.length)),
+        hardest_hit_by_byes: worst.map((w) => ({ week: w.week, bye_cost: w.bye_cost, on_bye: w.on_bye })),
+        injured_now: roster.filter((p) => p.injury).map((p) => `${p.name} (${p.injury})`),
+        by_week: outlook,
+        caveat: ROS_CAVEAT,
       });
     },
   );

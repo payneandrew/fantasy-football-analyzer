@@ -130,6 +130,7 @@ test("scoreboard and standings parse head-to-head data", () => {
               "0": {
                 matchup: {
                   week: "4",
+                  matchup_grades: [{ matchup_grade: { team_key: "461.l.123456.t.4", grade: "B" } }, { matchup_grade: { team_key: "461.l.123456.t.9", grade: "C" } }],
                   teams: {
                     "0": { team: [[{ team_key: "461.l.123456.t.4" }, { name: "Alpha" }], { team_points: { coverage_type: "week", week: "4", total: "0.00" } }, { team_projected_points: { total: "106.95" } }] },
                     "1": { team: [[{ team_key: "461.l.123456.t.9" }, { name: "Beta" }], { team_points: { total: "0.00" } }, { team_projected_points: { total: "106.57" } }] },

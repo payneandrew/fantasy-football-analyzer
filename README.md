@@ -29,6 +29,10 @@ Built with TypeScript. Uses Sleeper's public read-only API, so no API key or log
 | `get_yahoo_transactions` | Yahoo: recent adds, drops, trades |
 | `get_yahoo_lineup_analysis` | Yahoo: your roster scored with your league's rules (RotoWire projections), best lineup vs current |
 | `get_yahoo_waiver_targets` | Yahoo: free agents ranked by how much they'd raise your lineup, with usage trends |
+| `get_ros_rankings` | Rest-of-season player values under your league's scoring: summed weekly projections and points above replacement |
+| `get_roster_outlook` | Your roster week by week: lineup projection, who's on bye, empty slots, what byes cost |
+| `get_yahoo_ros_rankings` | Yahoo: rest-of-season values under your Yahoo scoring |
+| `get_yahoo_roster_outlook` | Yahoo: week-by-week lineup outlook and bye costs |
 | `get_usage_trends` | Weekly snap share, targets, carries and red-zone looks for players you name (or your roster), with a rising/falling signal |
 | `get_usage_risers` | Free agents whose role is growing, with a warning for likely injury fill-ins |
 | `get_projections` | League-scored projections for any players or position |
@@ -89,6 +93,7 @@ src/
     client.ts           API client + daily on-disk cache of Sleeper's player database (.cache/)
     tools.ts            the MCP tool definitions
     usage.ts            snap share, targets/carries and team shares from weekly stats; rising/falling signal
+    ros.ts              rest-of-season values: replacement levels, points above replacement, bye-week outlook
     projections.ts      fetches projections and past stats, rescores them with YOUR league's
                         scoring settings (Sleeper's generic totals often include bonuses your
                         league doesn't use), and computes optimal lineups
@@ -107,7 +112,7 @@ src/
 ## Limitations
 
 - Projections come from an **undocumented** Sleeper endpoint (RotoWire data). It is single-week only and could change without notice.
-- No rest-of-season outlook or variance modeling yet.
+- Rest-of-season values sum future-week projections: they reflect injuries only as far as RotoWire has built them in, and there is no variance modeling yet.
 - Yahoo's Fantasy Sports API requires approval (an application, a signed agreement, and a new app with the Fantasy Sports permission whose Client ID you submit to Yahoo). Yahoo exposes no projections, so the Yahoo analysis tools score Sleeper's RotoWire projections with your Yahoo league's own rules.
 - Defense projections are approximate because expected values don't fit bracket scoring exactly.
 

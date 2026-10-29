@@ -7,6 +7,7 @@ import { find, collect } from "./normalize.js";
 import { buildMatcher } from "./match.js";
 import { yahooScoring, yahooSlots } from "./scoring.js";
 import { analyzeLineup, rankWaivers } from "./analysis.js";
+import { loadRos, replacementLevels, rankRos, rosterOutlook, ROS_CAVEAT, OUT_STATUSES } from "../sleeper/ros.js";
 import { getFreeAgents, getMyTeamKey, getRoster, getScoreboard, getSettings, getStandings, getTransactions } from "./league.js";
 
 const text = (data: unknown) => ({ content: [{ type: "text" as const, text: typeof data === "string" ? data : JSON.stringify(data, null, 2) }] });
@@ -134,4 +135,65 @@ export function registerYahooTools(server: McpServer) {
       });
     },
   );
+
+  /** Rest-of-season data scored with the Yahoo league's rules, plus the helpers the two ROS tools share. */
+  async function rosContext(throughWeek: number) {
+    const [settings, state, players, myTeam] = await Promise.all([getSettings(), sleeper.state(), getPlayers(), getMyTeamKey()]);
+    const { scoring, slots } = { scoring: yahooScoring(settings).scoring, slots: yahooSlots(settings) };
+    const { ros, weeks } = await loadRos(state.season, state.week, throughWeek, scoring);
+    const teams = Number(find(settings, "num_teams") ?? 12);
+    const positionOf = (id: string) => (players[id] && (players[id].position === "DEF" || (players[id].status === "Active" && players[id].team)) ? players[id].position : undefined);
+    return { players, myTeam, ros, weeks, slots, levels: replacementLevels(ros, positionOf, slots, teams), match: buildMatcher(players) };
+  }
+
+  server.registerTool(
+    "get_yahoo_ros_rankings",
+    {
+      description: `Rest-of-season player values under YOUR Yahoo league's scoring: summed weekly projections (byes drop out) and points above replacement ('par'). Compare players for trades and pickups beyond this week. Ownership isn't shown (that needs every team's roster); 'mine' marks your players. ${ROS_CAVEAT}`,
+      inputSchema: { position: POSITIONS.optional(), limit: z.number().int().min(1).max(50).default(20), include_injured: z.boolean().default(false).describe("Include players on IR, Out, PUP or suspended (excluded by default)"), through_week: z.number().int().min(1).max(18).default(17) },
+    },
+    async ({ position, limit, include_injured, through_week }) => {
+      const c = await rosContext(through_week);
+      const mine = new Set((await getRoster(c.myTeam.key)).map((p) => c.match(p)).filter(Boolean));
+      const startable = new Set(c.slots.flatMap((s) => (s === "FLEX" ? ["RB", "WR", "TE"] : [s])));
+      const rows = rankRos(c.ros, c.weeks, c.levels, (id) => {
+        const p = c.players[id];
+        return p && startable.has(p.position ?? "") ? { name: p.full_name ?? id, pos: p.position, team: p.team, injury: p.injury_status } : null;
+      })
+        .filter((r) => (!position || r.pos === position) && (include_injured || !OUT_STATUSES.has(r.injury ?? "")))
+        .slice(0, limit)
+        .map((r) => ({ ...r, mine: mine.has(r.id) || undefined, id: undefined }));
+      return text({ weeks: `${c.weeks[0]}-${c.weeks[c.weeks.length - 1]}`, replacement_level_per_game: Object.fromEntries(Object.entries(c.levels).filter(([p]) => startable.has(p)).map(([p, v]) => [p, Math.round(v * 100) / 100])), players: rows, caveat: ROS_CAVEAT });
+    },
+  );
+
+  server.registerTool(
+    "get_yahoo_roster_outlook",
+    {
+      description: `Your Yahoo roster week by week for the rest of the season: best-lineup projection each week, who is on bye, empty starting slots, and bye_cost (points the byes cost you). Players in your IR slot are excluded. ${ROS_CAVEAT}`,
+      inputSchema: { through_week: z.number().int().min(1).max(18).default(17) },
+    },
+    async ({ through_week }) => {
+      const c = await rosContext(through_week);
+      const roster = await getRoster(c.myTeam.key);
+      const usable = roster.filter((p) => p.slot !== "IR");
+      const outlookPlayers = usable.flatMap((p) => {
+        const id = c.match(p);
+        const pos = id ? c.players[id]?.position : undefined;
+        return id && pos ? [{ id, name: p.name, pos, injury: p.status }] : [];
+      });
+      const outlook = rosterOutlook(outlookPlayers, c.ros, c.weeks, c.slots);
+      const worst = [...outlook].sort((a, b) => b.bye_cost - a.bye_cost).slice(0, 3).filter((w) => w.bye_cost > 0);
+      return text({
+        weeks: `${c.weeks[0]}-${c.weeks[c.weeks.length - 1]}`,
+        average_lineup_projection: Math.round((outlook.reduce((t, w) => t + w.lineup_projection, 0) / Math.max(1, outlook.length)) * 100) / 100,
+        hardest_hit_by_byes: worst.map((w) => ({ week: w.week, bye_cost: w.bye_cost, on_bye: w.on_bye })),
+        injured_now: usable.filter((p) => p.status).map((p) => `${p.name} (${p.status}${p.injury_note ? `: ${p.injury_note}` : ""})`),
+        excluded: [...roster.filter((p) => p.slot === "IR").map((p) => `${p.name} (IR slot)`), ...usable.filter((p) => !c.match(p)).map((p) => `${p.name} (not matched)`)],
+        by_week: outlook,
+        caveat: ROS_CAVEAT,
+      });
+    },
+  );
+
 }

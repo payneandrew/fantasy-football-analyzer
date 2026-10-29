@@ -80,7 +80,7 @@ export async function recentPoints(season: string, currentWeek: number, scoring:
   };
 }
 
-const SLOT_ELIGIBILITY: Record<string, string[]> = {
+export const SLOT_ELIGIBILITY: Record<string, string[]> = {
   QB: ["QB"],
   RB: ["RB"],
   WR: ["WR"],

@@ -107,8 +107,9 @@ export async function getScoreboard(week?: number) {
 
 export function parseScoreboard(response: unknown): { week: number | null; matchups: MatchupTeam[][] } {
   const raw = normalize(response);
+  // Finished matchups also carry `matchup_grades` entries with team keys, so read only the `teams` list.
   const matchups = asArray(find(raw, "matchups")).map((m: any) =>
-    collect(m, "team_key").map((t) => ({
+    collect(find(m, "teams") ?? m, "team_key").filter((t) => t.name !== undefined).map((t) => ({
       team_key: String(t.team_key),
       team: String(t.name ?? ""),
       points: t.team_points?.total !== undefined ? Number(t.team_points.total) : null,

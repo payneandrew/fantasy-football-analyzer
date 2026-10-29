@@ -25,6 +25,7 @@ Prefer the MCP tools over guessing. Typical flows:
 - **"Who should I start / what's my lineup?"** `get_lineup_analysis`
 - **"Who should I pick up / bid on?"** For chop pools use `get_bid_plan` first (it runs the forecast, previews the pool, and sizes bids); `get_chop_forecast` answers "who's getting chopped?" on its own. For ordinary free agents use `get_waiver_targets` (ranks by `lineup_gain`). `get_chopped_players` and `get_faab_report` give the raw detail.
 - **"Who is breaking out?" / evaluating a pickup or a player's role:** `get_usage_risers` (free agents) and `get_usage_trends` (specific players). Snap share and targets+carries lead points, so weigh them above last week's score. A big recent role with a tiny projection is usually an injury fill-in (the tools flag it in `caution`). Waiver and lineup tools also include a compact `usage` field.
+- **Beyond this week (trades, bye weeks, who to hold):** `get_ros_rankings` / `get_yahoo_ros_rankings` compare players by points above replacement over the rest of the season; `get_roster_outlook` / `get_yahoo_roster_outlook` show which weeks a roster is thin and what byes cost. They exclude injured (IR/Out/PUP) players from rankings by default. Their projections are RotoWire's weekly numbers summed up: say that injuries and role changes are only partly reflected.
 - **Yahoo league (head-to-head):** `get_yahoo_lineup_analysis`, `get_yahoo_waiver_targets`, `get_yahoo_matchup`, `get_yahoo_league`. In a session where those tools are missing (for example a cloud session), ask the owner to paste roster/settings data instead. Players on bye show `on_bye: true`, so a 0 projection there is expected, not a data problem.
 - **"Where do I stand?"** `get_guillotine_status`, `get_weekly_scoreboard`
 - Always call `get_my_leagues` first to get the league id. League ids and usernames are deliberately not stored in this repo.
@@ -41,7 +42,7 @@ Analysis conventions that came out of earlier sessions:
 
 - `src/index.ts`: server entry; registers each platform's tools.
 - `src/env.ts`: loads `.env` (project-root relative; never overrides existing variables).
-- `src/sleeper/`: `client.ts` (API client, daily on-disk player cache in `.cache/`), `tools.ts` (all Sleeper tool definitions), `projections.ts` (rescores projections with league scoring, optimal lineups), `usage.ts` (snap/target/carry usage and trends), `guillotine.ts`, `faab.ts`.
+- `src/sleeper/`: `client.ts` (API client, daily on-disk player cache in `.cache/`), `tools.ts` (all Sleeper tool definitions), `projections.ts` (rescores projections with league scoring, optimal lineups), `ros.ts` (rest-of-season values and bye outlook), `usage.ts` (snap/target/carry usage and trends), `guillotine.ts`, `faab.ts`.
 - `src/yahoo/`: `auth.ts` / `auth-cli.ts` (OAuth login via `npm run yahoo:auth`, tokens in `.cache/`), `client.ts`, `normalize.ts` + `league.ts` (Yahoo JSON readers), `scoring.ts`, `match.ts`, `analysis.ts`, `tools.ts`; tests in `*.test.ts` (`npm test`).
 - `scripts/start-mcp.sh`: launches the server, installing and building first if needed (this is what `.mcp.json` runs, so a fresh clone or cloud session works).
 - Build with `npm run build` (TypeScript, Node 20.12+). After changing `src/`, rebuild and restart the MCP server.
